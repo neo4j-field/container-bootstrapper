@@ -52,14 +52,14 @@ As surgeons say: _"When in doubt, cut it out!"_
 ## Problem 2: Neo4j itself relies too heavily on local java.io.File's
 Want to configure TLS for securing Bolt or HTTPS? You need a private
 key...ok, so what? Well, Neo4j's `SslPolicyLoader` uses
-`java.nio.file.Path` references to load the private key file [1].
+`java.nio.file.Path` references to load the private key file [1][1].
 
-"But, can't you use something like _Docker Secrets Manager [2] or
-Kubernetes Secrets?_ [3]
+"But, can't you use something like _Docker Secrets Manager [2][2] or
+Kubernetes Secrets?_ [3][3]
 
 Yes...you can. And that might work just great. Plus services like GKE
 now integrate with things like Google's KMS to make sure the secret is
-stored encrypted in `etcd` [4].
+stored encrypted in `etcd` [4][4].
 
 BUT! This means **you still need the private key file somewhere on
 runtime filesystem of the container!** (Not sure about you, but I'd
@@ -95,7 +95,7 @@ going to be tough to tighten things tup.
 ## Additional Reading
 * NCC Group's whitepaper is a great tome, even if from 2016!
   - _"Understanding and Hardening Linux Containers"_, June 29, 2016
-  - Short link: https://bit.ly/3angTyy (See [5] if it doesn't work.)
+  - Short link: https://bit.ly/3angTyy (See [5][5] if it doesn't work.)
 * Containers, Security, and Echo Chambers (Jess Frazelle, 20 May 2018)
   - https://blog.jessfraz.com/post/containers-security-and-echo-chambers/
 * Running a JVM in a Container without Getting Killed (v2)
