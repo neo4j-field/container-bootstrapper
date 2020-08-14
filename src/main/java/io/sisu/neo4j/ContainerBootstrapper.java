@@ -67,8 +67,9 @@ public class ContainerBootstrapper implements Bootstrapper {
             if (key.startsWith("NEO4J_")
                     && !key.equalsIgnoreCase("neo4j_home")
                     && !key.equalsIgnoreCase("neo4j_conf")) {
-                System.out.println(String.format("Adding config override from environment %s:%s", key, val));
-                config.put(convertEnvToProp(key), val);
+                String property = convertEnvToProp(key);
+                System.out.println(String.format("Adding config override from environment %s=%s", property, val));
+                config.put(property, val);
             }
         });
 
