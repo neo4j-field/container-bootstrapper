@@ -13,21 +13,25 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.Group;
 import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.CommandLineArgs;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
+import picocli.CommandLine;
 import sun.misc.Signal;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,8 +42,36 @@ import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 
 public class ContainerBootstrapper implements Bootstrapper {
 
+    protected static String convertEnvToProp(String env) {
+        return env
+                .replaceAll("NEO4J_", "")
+                .replaceAll("_", ".")
+                .replaceAll("\\.\\.", "_");
+    }
+
     public static int start(Bootstrapper boot, String... argv) {
-        return 0;
+        Map<String, String> config = new HashMap<>();
+        CommandLineArgs args = CommandLineArgs.parse(argv);
+
+        if (args.version()) {
+            System.out.println("neo4j " + Version.getNeo4jVersion());
+            return 0;
+        }
+
+        if (args.homeDir() == null) {
+            throw new ServerStartupException("Argument --home-dir is required and was not provided.");
+        }
+
+        // XXX: We take our config overrides from the environment, just like the Docker entrypoint.sh
+        System.getenv().forEach((key, val) -> {
+            if (key.startsWith("NEO4J_")
+                    && !key.equalsIgnoreCase("neo4j_home")
+                    && !key.equalsIgnoreCase("neo4j_conf")) {
+                config.put(convertEnvToProp(key), val);
+            }
+        });
+
+        return boot.start(args.homeDir(), args.configFile(), config);
     }
 
     @Override
@@ -51,7 +83,7 @@ public class ContainerBootstrapper implements Bootstrapper {
 
         Config config = Config.newBuilder()
                 .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
-                //.fromFileNoThrow(configFile)
+                .fromFileNoThrow(configFile)
                 .setRaw(configOverrides)
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath())
                 .build();
