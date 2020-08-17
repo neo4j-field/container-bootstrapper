@@ -3,7 +3,11 @@
 Neo4j kinda sucks in a cloud-centric world and the first step is
 making it suck-less in a Linux container world.
 
-TL;DR: `make test`
+TL;DR:
+1. Get Docker in a Linux-like environment
+2. Run `make test` to launch a Neo4j 4.1 Community Edition in Docker
+
+> Want to use Enterprise Edition? `make test-ee`.
 
 ## Problem 1: The official Docker images are bloated
 Having all sorts of pomp and circumstance in shell scripts calling
@@ -117,7 +121,11 @@ days.
 But, when you're container is basically the equivalent of a VM, it's
 going to be tough to tighten things tup.
 
-### Experiment 3.1: TBD
+### Experiment 3.1: STILL RESEARCHING
+
+For now, I'm testing with making the root image read-only via
+something like: `Docker run --read-only`. This currently seems to work
+ok.
 
 ## Additional Reading
 * NCC Group's whitepaper is a great tome, even if from 2016!
