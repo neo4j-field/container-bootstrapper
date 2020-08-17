@@ -13,6 +13,7 @@ RUN wget -q -P /tmp "${NEO4J_DOWNLOAD_URI}/${NEO4J_TARBALL}" \
     && tar x -z -f "/tmp/${NEO4J_TARBALL}" -C /tmp \
     && rm "/tmp/${NEO4J_TARBALL}" \
     && mv /tmp/neo4j-* "${NEO4J_HOME}" \
+    && mkdir "${NEO4J_HOME}/lib-override" \
     && rm -r "${NEO4J_HOME}/data" "${NEO4J_HOME}/logs" "${NEO4J_HOME}/plugins" \
     && ln -s /data "${NEO4J_HOME}/data" \
     && ln -s /logs "${NEO4J_HOME}/logs" \
@@ -35,7 +36,7 @@ COPY --from=downloader /plugins /plugins
 # /tmp is required at the moment to support --read-only thanks to JNA stuff
 VOLUME ["/data", "/logs", "/plugins", "/tmp"]
 
-ENV CLASSPATH="${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
+ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
 # Check Neo4j can run
 RUN ["java", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
 
@@ -63,6 +64,7 @@ ENTRYPOINT ["java", \
     "-XX:FlightRecorderOptions=stackdepth=256", \
     "-XX:+UnlockDiagnosticVMOptions", \
     "-XX:+DebugNonSafepoints"]
-CMD ["io.sisu.neo4j.ContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
+CMD ["io.sisu.neo4j.server.CommunityContainerEntryPoint", \
+        "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
-COPY ./build/libs/container-bootstrapper.jar "${NEO4J_HOME}/plugins"
+COPY ./build/libs/container-bootstrapper.jar "${NEO4J_HOME}/lib-override/"
