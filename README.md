@@ -3,7 +3,7 @@
 Neo4j kinda sucks in a cloud-centric world and the first step is
 making it suck-less in a Linux container world.
 
-TL;DR:
+**TL;DR:**
 1. Get Docker in a Linux-like environment
 2. Run `make test` to launch a Neo4j 4.1 Community Edition in Docker
 
@@ -21,7 +21,7 @@ shell scripts calling Java makes for a very bad time:
   - too much implicit magic (e.g. NEO4JLABS_PLUGINS) that scares me
 
 ### Experiment 1.1: Use Google's "distroless" Java image as base
-The official Neo4j Dockerfile builds off the openjdk base images,
+The official Neo4j Dockerfile builds off the OpenJDK base images,
 which are built off Debian. They ship with a full (albeit minimal)
 Debian userland:
 
@@ -139,7 +139,7 @@ ok.
   - https://www.youtube.com/watch?v=lviLZFciDv4
 
 ### footnotes
-(these might to render on github.com)
+(these might not render on github.com)
 
 [1]: https://github.com/neo4j/neo4j/blob/6d961e5e638e48e91ea58a603f76f2429e569e1d/community/ssl/src/main/java/org/neo4j/ssl/PkiUtils.java#L87
 
