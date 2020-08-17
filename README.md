@@ -16,16 +16,7 @@ shell scripts calling Java makes for a very bad time:
   - matryoshka doll of complexity makes it hard to reason about
   - too much implicit magic (e.g. NEO4JLABS_PLUGINS) that scares me
 
-### Experiment 1.1: Use smaller Alpine images
-Neo4j does very very little with native code. At most, from what I've
-seen, it's via Netty and that's not even Neo4j maintained code. (AFAIK
-it's got some shims for OS-specific syscall wrappers and also OpenSSL
-support.)
-
-Let's explore using Alpine with its minimal surface area and musl libc
-implementation that's smaller and well maintained.
-
-### Experiment 1.2: Install OpenJDK from Alpine's package repo
+### Experiment 1.1: Use Google's "distroless" Java image as base
 The official Neo4j Dockerfile builds off the openjdk base images,
 which are built off Debian. They ship with a full (albeit minimal)
 Debian userland:
@@ -42,12 +33,32 @@ root@45f9c3baa7fc:/# find /lib /usr/lib | wc -l
 
 As Gwen Stefani says: [this is bananas](https://youtu.be/Kgjkth6BRRY?t=150)
 
-### Experiment 1.3: Call Java directly
-Simplify the Dockerfile to use an `ENTRYPOINT` of the java executable
-directly with no shell middleman. In fact, this might let us rip out
-Alpine's busybox entirely!
+My original idea was to base the new image off Alpine with its
+simplified musl-based busybox userland. But still...why do we need a
+shell?
 
-As surgeons say: _"When in doubt, cut it out!"_
+Google has apparently lead the charge in the idea of "distroless"
+container images, which aren't always the easiest to build, especially
+for Java apps since the JRE is a pretty large fish to fry. The best
+way to look at the idea of "distroless" is basically "FROM SCRATCH"
+but for the more challenging JIT-based languages like Java, Ruby, and
+Python.
+
+Luckily, they provide a prebuild Java 11 image:
+
+  https://github.com/GoogleContainerTools/distroless/tree/master/java
+
+The resulting [Dockerfile](./Dockerfile) must use a 2-stage approach,
+first staging the Neo4j files in an Alpine image and then COPY'ing
+them into the Google "distroless" Java image. This provides:
+
+1. A very minimal container surface, basically just the JDK and
+   required GNU libc dynamic libs + OpenSSL
+2. A non-root user called `nonroot` we can use instead of `neo4j`
+
+### Experiment 1.2: Call Java directly!
+Since our base image now no longer contains typical Debian userland
+cruft (like a shell), we need to call `java` directly!
 
 ## Problem 2: Neo4j itself relies too heavily on local java.io.File's
 Want to configure TLS for securing Bolt or HTTPS? You need a private
@@ -81,6 +92,22 @@ Simple as that...instead of a local filesystem path, parse a uri like
 Why uri's? We can map the scheme to the backing client for retrieving
 the object.
 
+> This part is currently _a work in progress_...see the `CloudUri` class
+> I'm toying with.
+
+### Experiment 2.2: Hot-wire in a better SslPolicyLoader
+There's so much nastiness going on in the bootstrapping code that it's
+looking to be far far easier to just preload a custom/hacked
+SslPolicyLoader class. I'm going to do that to save on copy-pasta.
+
+For now, I'm implemented this by:
+
+1. Writing an new `org.neo4j.ssl.config.SslPolicyLoader`
+2. Creating a `${NEO4J_HOME}/lib-override` directory in the image
+3. Adding `${NEO4J_HOME}/lib-override` before `/lib` in the classpath
+
+Sometimes Java is fun.
+
 ## Problem 3: Further hardening of Neo4j is HARD
 Because of Problem 1 and 2, hardening Neo4j is much more difficult
 than it could be. Linux containers support a tremendous amount of
@@ -100,9 +127,11 @@ going to be tough to tighten things tup.
   - https://blog.jessfraz.com/post/containers-security-and-echo-chambers/
 * Running a JVM in a Container without Getting Killed (v2)
   - https://blog.csanchez.org/2018/06/21/running-a-jvm-in-a-container-without-getting-killed-ii/
-
+* Distroless Docker: Containerizing Apps, not VMs - Matthew Moore
+  - https://www.youtube.com/watch?v=lviLZFciDv4
 
 ### footnotes
+(these might to render on github.com)
 
 [1]: https://github.com/neo4j/neo4j/blob/6d961e5e638e48e91ea58a603f76f2429e569e1d/community/ssl/src/main/java/org/neo4j/ssl/PkiUtils.java#L87
 
