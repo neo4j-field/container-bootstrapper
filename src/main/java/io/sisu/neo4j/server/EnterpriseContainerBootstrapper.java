@@ -2,6 +2,7 @@ package io.sisu.neo4j.server;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,7 +17,7 @@ public class EnterpriseContainerBootstrapper extends ContainerBootstrapper {
     protected DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies) {
         try {
             Class<?> clazz = Class.forName("com.neo4j.server.enterprise.EnterpriseManagementServiceFactory");
-            Method method = clazz.getMethod("createManagementService", Config.class, GraphDatabaseDependencies.class);
+            Method method = clazz.getMethod("createManagementService", Config.class, ExternalDependencies.class);
             Object object = method.invoke(null, config, dependencies);
             if (object instanceof DatabaseManagementService) {
                 return (DatabaseManagementService) object;
