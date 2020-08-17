@@ -1,19 +1,17 @@
-package io.sisu.neo4j;
+package io.sisu.neo4j.server;
 
-import org.neo4j.server.Bootstrapper;
-import org.neo4j.server.NeoBootstrapper;
 
 import static org.neo4j.internal.unsafe.UnsafeUtil.disableIllegalAccessLogger;
 
 /**
  * Simplified entrypoint for container-based Neo4j
  */
-public class ContainerEntryPoint {
+public class CommunityContainerEntryPoint {
 
     public static void main(String [] args) {
         disableIllegalAccessLogger();
 
-        int status = ContainerBootstrapper.start(new ContainerBootstrapper(), args);
+        int status = ContainerBootstrapper.start(new CommunityContainerBootstrapper(), args);
         if (status != 0) {
             System.exit(status);
         }

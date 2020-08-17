@@ -1,4 +1,4 @@
-package io.sisu.neo4j;
+package io.sisu.neo4j.server;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ContainerBootstrapperTest {
 
-    private class FakeBootstrapper implements Bootstrapper {
+    private static class FakeBootstrapper implements Bootstrapper {
 
         @Override
         public int start(File homeDir, File configFile, Map<String, String> configOverrides) {

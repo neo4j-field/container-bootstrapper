@@ -1,4 +1,4 @@
-package io.sisu.neo4j;
+package io.sisu.neo4j.configuration;
 
 import org.neo4j.configuration.Config;
 

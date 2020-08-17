@@ -1,4 +1,4 @@
-package io.sisu.neo4j;
+package io.sisu.neo4j.server;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -6,9 +6,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -24,7 +22,6 @@ import org.neo4j.server.CommandLineArgs;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
-import picocli.CommandLine;
 import sun.misc.Signal;
 
 import java.io.Closeable;
@@ -38,9 +35,8 @@ import java.util.logging.Logger;
 
 import static java.lang.String.format;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
-import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 
-public class ContainerBootstrapper implements Bootstrapper {
+public abstract class ContainerBootstrapper implements Bootstrapper {
 
     protected static String convertEnvToProp(String env) {
         return env
@@ -117,12 +113,7 @@ public class ContainerBootstrapper implements Bootstrapper {
         }
     }
 
-    protected DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies) {
-        // XXX: for now, we copy-pasta from CE edition's CommunityBootstrapper, but in reality this will need to change
-        // based on which version of Neo4j EE we are containerizing
-        DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory(COMMUNITY, CommunityContainerEditionModule::new);
-        return facadeFactory.build(config, dependencies);
-    }
+    protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
 
     // ********************************************************************************************
     //   Copy-pasta from org/neo4j/server/NeoBootstrapper.java in Neo4j 4.1.1
