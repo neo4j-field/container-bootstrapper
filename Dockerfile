@@ -1,5 +1,5 @@
 ## Use a simple Alpine container just to fetch and stage the Neo4j files
-FROM alpine:3.12 AS downloader
+FROM alpine:3.12 AS neo4j-ce-downloader
 RUN apk update && apk add openjdk11-jre-headless openssl
 
 ARG NEO4J_SHA256=4f663a520bec40dfd0b1972feb3cf93af321c230b448adb6dc917717e67a1271
@@ -20,18 +20,26 @@ RUN wget -q -P /tmp "${NEO4J_DOWNLOAD_URI}/${NEO4J_TARBALL}" \
     && ln -s /plugins "${NEO4J_HOME}/plugins" \
     && mkdir /metrics && ln -s /metrics "${NEO4J_HOME}/metrics"
 
+## Build our exeve wrapper
+FROM golang:1.15-buster AS go-builder
+WORKDIR /go/src/app
+ENV GOOS=linux \
+    LDFLAGS="-s -w"
+COPY gojava.go .
+RUN go build -ldflags="${LDFLAGS}" gojava.go
 
 ####################################################################################
 ## Use Google's "distroless" OpenJDK image...less bloat, more awesome!
 FROM gcr.io/distroless/java-debian10:11
 ARG NEO4J_HOME="/neo4j"
 ARG NONROOT=nonroot
-COPY --from=downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
+COPY --from=neo4j-ce-downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
 # Since this container is shell-less, we use COPY with --chown to make directories
-COPY --from=downloader --chown=${NONROOT} /data /data
-COPY --from=downloader --chown=${NONROOT} /logs /logs
-COPY --from=downloader --chown=${NONROOT} /metrics /metrics
-COPY --from=downloader /plugins /plugins
+COPY --from=neo4j-ce-downloader --chown=${NONROOT} /data /data
+COPY --from=neo4j-ce-downloader --chown=${NONROOT} /logs /logs
+COPY --from=neo4j-ce-downloader --chown=${NONROOT} /metrics /metrics
+COPY --from=neo4j-ce-downloader /plugins /plugins
+COPY --from=go-builder /go/src/app/gojava /bin/gojava
 
 # /tmp is required at the moment to support --read-only thanks to JNA stuff
 VOLUME ["/data", "/logs", "/plugins", "/tmp"]
@@ -64,7 +72,40 @@ ENTRYPOINT ["java", \
     "-XX:FlightRecorderOptions=stackdepth=256", \
     "-XX:+UnlockDiagnosticVMOptions", \
     "-XX:+DebugNonSafepoints"]
-CMD ["io.sisu.neo4j.server.CommunityContainerEntryPoint", \
-        "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
+
+
+# /tmp is required at the moment to support --read-only thanks to JNA stuff
+VOLUME ["/data", "/logs", "/plugins", "/tmp"]
+
+ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
+
+# Default JRE config
+ENV JAVA_TOOL_OPTIONS -Dfile.encoding=UTF-8 \
+    -XX:+UseG1GC \
+    -XX:-OmitStackTraceInFastThrow \
+    -XX:+AlwaysPreTouch \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+TrustFinalNonStaticFields \
+    -XX:+DisableExplicitGC \
+    -XX:MaxInlineLevel=15 \
+    -Djdk.nio.maxCachedBufferSize=262144 \
+    -Dio.netty.tryReflectionSetAccessible=true \
+    -XX:+ExitOnOutOfMemoryError \
+    -Djdk.tls.ephermeralDHKeySize=2048 \
+    -Djdk.tls.rejectClientInitiatedRenogotiation=true \
+    -XX:FlightRecorderOptions=stackdepth=256 \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+DebugNonSafepoints
+
+# Check if Neo4j can run
+RUN ["gojava", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
+
+# Actual app-specific details
+EXPOSE 7474 7473 7687
+USER nonroot
+ENV NEO4J_dbms_default__listen__address=0.0.0.0
+ENTRYPOINT ["gojava"]
+
+CMD ["io.sisu.neo4j.server.CommunityContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
 COPY ./build/libs/container-bootstrapper.jar "${NEO4J_HOME}/lib-override/"

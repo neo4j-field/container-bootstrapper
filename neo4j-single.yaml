@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j-ee-standalone
+  labels:
+    app: neo4j
+spec:
+  ports:
+    - port: 17474
+      targetPort: 7474
+      name: browser
+    - port: 17687
+      targetPort: 7687
+      name: bolt
+  #clusterIP: None
+  selector:
+    app: neo4j-ee-standalone
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j-ee-standalone
+spec:
+  serviceName: "neo4j-ee-standalone"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j-ee-standalone
+  template:
+    metadata:
+      labels:
+        app: neo4j-ee-standalone
+    spec:
+      terminationGracePeriodSeconds: 300
+      securityContext:
+        fsGroup: 65532
+      containers:
+        - name: neo4j-ee-standalone
+          image: neo4j-docker:enterprise
+          imagePullPolicy: Never
+          env:
+            - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
+              value: "yes"
+            - name: NEO4J_dbms_pagecache_size
+              value: "768m"
+            - name: JVM_INITIAL_HEAP
+              value: "1280m"
+            - name: JVM_MAXIMUM_HEAP
+              value: "2048m"
+            - name: NEO4J_dbms_connector_bolt_advertised__address
+              value: ":17687"
+          ports:
+            - containerPort: 5000
+              name: tcp-discovery
+            - containerPort: 6000
+              name: tcp-tx
+            - containerPort: 7000
+              name: tcp-raft
+            - containerPort: 7474
+              name: tcp-browser
+            - containerPort: 7687
+              name: tcp-bolt
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 2.0
+            limits:
+              memory: 3Gi
+              cpu: 4.0
+          volumeMounts:
+            - name: neo4j-ee-standalone-datadir
+              mountPath: "/data"
+          readinessProbe:
+            initialDelaySeconds: 60
+            failureThreshold: 3
+            timeoutSeconds: 2
+            periodSeconds: 10
+            tcpSocket:
+              port: 7687
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 2
+            tcpSocket:
+              port: 7687
+      volumes:
+        - name: neo4j-ee-standalone-datadir
+          persistentVolumeClaim:
+            claimName: neo4j-ee-standalone-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4j-ee-standalone-pv-claim
+  labels:
+    app: neo4j
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
