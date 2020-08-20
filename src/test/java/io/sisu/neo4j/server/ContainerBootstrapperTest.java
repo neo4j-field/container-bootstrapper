@@ -6,6 +6,8 @@ import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.ServerStartupException;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 
 public class ContainerBootstrapperTest {
@@ -42,5 +44,10 @@ public class ContainerBootstrapperTest {
                 () -> {
                     ContainerBootstrapper.start(new FakeBootstrapper());
                 });
+    }
+
+    @Test
+    public void urischemeTest() throws URISyntaxException {
+        System.out.println((new URI("file:///junk.txt")).getScheme());
     }
 }

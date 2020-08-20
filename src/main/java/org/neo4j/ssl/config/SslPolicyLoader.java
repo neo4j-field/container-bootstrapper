@@ -28,7 +28,7 @@ import org.neo4j.configuration.ssl.ContainerSslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.org.neo4j.configuration.CloudUri;
+import org.neo4j.org.neo4j.configuration.AssetUri;
 import org.neo4j.ssl.ContainerPkiUtils;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;
@@ -173,7 +173,7 @@ public class SslPolicyLoader {
     }
 
     private KeyAndChain pemKeyAndChain(ContainerSslPolicyConfig policyConfig) {
-        CloudUri privateKeyFile = config.get(policyConfig.remote_private_key);
+        AssetUri privateKeyFile = config.get(policyConfig.remote_private_key);
         SecureString privateKeyPassword = config.get(policyConfig.private_key_password);
         File trustedCertificatesDir = config.get(policyConfig.trusted_dir).toFile();
 
@@ -193,7 +193,7 @@ public class SslPolicyLoader {
         PrivateKey privateKey;
 
         X509Certificate[] keyCertChain;
-        CloudUri keyCertChainFile = config.get(policyConfig.remote_public_certificate);
+        AssetUri keyCertChainFile = config.get(policyConfig.remote_public_certificate);
 
         privateKey = loadPrivateKey(privateKeyFile, privateKeyPassword);
         keyCertChain = loadCertificateChain(keyCertChainFile);
@@ -232,7 +232,7 @@ public class SslPolicyLoader {
         return crls;
     }
 
-    private static X509Certificate[] loadCertificateChain(CloudUri cert) {
+    private static X509Certificate[] loadCertificateChain(AssetUri cert) {
         try {
             return ContainerPkiUtils.loadCertificates(cert.getChannel());
         } catch (Exception e) {
@@ -240,7 +240,7 @@ public class SslPolicyLoader {
         }
     }
 
-    private PrivateKey loadPrivateKey(CloudUri key, SecureString privateKeyPassword) {
+    private PrivateKey loadPrivateKey(AssetUri key, SecureString privateKeyPassword) {
         String password = privateKeyPassword != null ? privateKeyPassword.getString() : null;
 
         try {

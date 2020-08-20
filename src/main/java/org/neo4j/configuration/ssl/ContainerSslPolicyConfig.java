@@ -3,7 +3,7 @@ package org.neo4j.configuration.ssl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GroupSetting;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.org.neo4j.configuration.CloudUri;
+import org.neo4j.org.neo4j.configuration.AssetUri;
 import org.neo4j.org.neo4j.configuration.ContainerSettingValueParsers;
 import org.neo4j.string.SecureString;
 
@@ -15,10 +15,10 @@ import static org.neo4j.configuration.SettingValueParsers.*;
 
 public class ContainerSslPolicyConfig extends GroupSetting {
     @Description("Private PKCS#8 key in PEM format.")
-    public final Setting<CloudUri> remote_private_key;
+    public final Setting<AssetUri> remote_private_key;
 
     @Description("X.509 certificate (chain) of this server in PEM format.")
-    public final Setting<CloudUri> remote_public_certificate;
+    public final Setting<AssetUri> remote_public_certificate;
 
     public final Setting<Boolean> enabled = getBuilder("enabled", BOOL, Boolean.FALSE).build();
 
@@ -67,8 +67,8 @@ public class ContainerSslPolicyConfig extends GroupSetting {
             throw new IllegalArgumentException("SslPolicy can not be created for scope: " + scopeString);
         }
 
-        remote_private_key = getBuilder("remote_private_key", ContainerSettingValueParsers.CLOUD_URI, null).build();
-        remote_public_certificate = getBuilder("remote_public_certificate", ContainerSettingValueParsers.CLOUD_URI, null).build();
+        remote_private_key = getBuilder("remote_private_key", ContainerSettingValueParsers.ASSET_URI, null).build();
+        remote_public_certificate = getBuilder("remote_public_certificate", ContainerSettingValueParsers.ASSET_URI, null).build();
 
         client_auth = getBuilder("client_auth", ofEnum(ClientAuth.class), scope.authDefault).build();
         base_directory = getBuilder("base_directory", PATH, Path.of(scope.baseDir)).setDependency(neo4j_home).immutable().build();
