@@ -4,12 +4,19 @@ import io.sisu.neo4j.io.sisu.neo4j.cloud.LocalFSProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.org.neo4j.configuration.AssetUri;
 
-import java.io.BufferedReader;
 import java.net.URI;
-import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 
 public class SslPolicyLoaderTest {
 
@@ -19,12 +26,32 @@ public class SslPolicyLoaderTest {
     }
 
     @Test
-    public void canLoadPrivateKeyFromLocalFSProvider() throws Exception {
-        URI keyuri = this.getClass().getResource("/privatekey.pem").toURI();
-        AssetUri uri = AssetUri.parseUri(keyuri.toASCIIString());
+    public void canLoadPrivateKeyFromLocalFSProvider(@TempDir Path tempDir) throws Exception {
+        Files.createDirectory(tempDir.resolve("trusted"));
+        Files.createDirectory(tempDir.resolve("revoked"));
 
-        try (BufferedReader reader = new BufferedReader(Channels.newReader(uri.getChannel(), StandardCharsets.UTF_8))) {
-            Assertions.assertEquals("-----BEGIN PRIVATE KEY-----", reader.readLine());
-        }
+        SslPolicyConfig policy = SslPolicyConfig.forScope(SslPolicyScope.TESTING);
+        URI keyUri = this.getClass().getResource("/key.pem").toURI();
+        URI certUri = this.getClass().getResource("/cert.pem").toURI();
+
+        Config config = Config.newBuilder()
+                .set(policy.enabled, Boolean.TRUE)
+                .set(policy.base_directory, tempDir)
+                .set(policy.private_key, AssetUri.parseUri(keyUri.toASCIIString()))
+                .set(policy.public_certificate, AssetUri.parseUri(certUri.toASCIIString()))
+                .set(policy.client_auth, ClientAuth.NONE)
+                .build();
+
+        Assertions.assertTrue(config.get(policy.enabled));
+
+        SslPolicyLoader loader = SslPolicyLoader.create(config, FormattedLogProvider.toOutputStream(System.out));
+        Assertions.assertTrue(loader.hasPolicyForSource(SslPolicyScope.TESTING));
+
+        PrivateKey key = loader.getPolicy(SslPolicyScope.TESTING).privateKey();
+        X509Certificate[] chain = loader.getPolicy(SslPolicyScope.TESTING).certificateChain();
+
+        Assertions.assertEquals("PKCS#8", key.getFormat());
+        Assertions.assertEquals(1, chain.length);
+        Assertions.assertEquals("CN=localhost", chain[0].getIssuerDN().getName());
     }
 }

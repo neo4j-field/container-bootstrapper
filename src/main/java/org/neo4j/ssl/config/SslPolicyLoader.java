@@ -24,7 +24,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.ContainerSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -121,12 +121,12 @@ public class SslPolicyLoader {
     }
 
     private void load() {
-        config.getGroups(ContainerSslPolicyConfig.class).values().forEach(this::addPolicy);
+        config.getGroups(SslPolicyConfig.class).values().forEach(this::addPolicy);
 
         policies.forEach((scope, sslPolicy) -> log.info(format("Loaded SSL policy '%s' = %s", scope.name(), sslPolicy)));
     }
 
-    private void addPolicy(ContainerSslPolicyConfig policyConfig) {
+    private void addPolicy(SslPolicyConfig policyConfig) {
         if (config.get(policyConfig.enabled)) {
             SslPolicyScope scope = policyConfig.getScope();
             SslPolicy policy = createSslPolicy(policyConfig);
@@ -136,7 +136,7 @@ public class SslPolicyLoader {
         }
     }
 
-    private SslPolicy createSslPolicy(ContainerSslPolicyConfig policyConfig) {
+    private SslPolicy createSslPolicy(SslPolicyConfig policyConfig) {
         File baseDirectory = config.get(policyConfig.base_directory).toFile();
         File revokedCertificatesDir = config.get(policyConfig.revoked_dir).toFile();
 
@@ -172,8 +172,8 @@ public class SslPolicyLoader {
                 logProvider);
     }
 
-    private KeyAndChain pemKeyAndChain(ContainerSslPolicyConfig policyConfig) {
-        AssetUri privateKeyFile = config.get(policyConfig.remote_private_key);
+    private KeyAndChain pemKeyAndChain(SslPolicyConfig policyConfig) {
+        AssetUri privateKeyFile = config.get(policyConfig.private_key);
         SecureString privateKeyPassword = config.get(policyConfig.private_key_password);
         File trustedCertificatesDir = config.get(policyConfig.trusted_dir).toFile();
 
@@ -193,7 +193,7 @@ public class SslPolicyLoader {
         PrivateKey privateKey;
 
         X509Certificate[] keyCertChain;
-        AssetUri keyCertChainFile = config.get(policyConfig.remote_public_certificate);
+        AssetUri keyCertChainFile = config.get(policyConfig.public_certificate);
 
         privateKey = loadPrivateKey(privateKeyFile, privateKeyPassword);
         keyCertChain = loadCertificateChain(keyCertChainFile);
