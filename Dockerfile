@@ -7,18 +7,21 @@ ARG NEO4J_TARBALL=neo4j-community-4.1.1-unix.tar.gz
 ARG NEO4J_DOWNLOAD_URI=https://dist.neo4j.org
 ARG NEO4J_HOME="/neo4j"
 
-RUN mkdir /data /logs /plugins
+RUN mkdir /data /logs /plugins /certs /metrics
 RUN wget -q -P /tmp "${NEO4J_DOWNLOAD_URI}/${NEO4J_TARBALL}" \
     && echo "${NEO4J_SHA256}  /tmp/${NEO4J_TARBALL}" | sha256sum -csw \
     && tar x -z -f "/tmp/${NEO4J_TARBALL}" -C /tmp \
     && rm "/tmp/${NEO4J_TARBALL}" \
     && mv /tmp/neo4j-* "${NEO4J_HOME}" \
-    && mkdir "${NEO4J_HOME}/lib-override" \
-    && rm -r "${NEO4J_HOME}/data" "${NEO4J_HOME}/logs" "${NEO4J_HOME}/plugins" \
-    && ln -s /data "${NEO4J_HOME}/data" \
-    && ln -s /logs "${NEO4J_HOME}/logs" \
+    && chown -R root:root "${NEO4J_HOME}"
+
+RUN mkdir "${NEO4J_HOME}/lib-override" \
+    && rm -r "${NEO4J_HOME}/data" "${NEO4J_HOME}/logs" "${NEO4J_HOME}/plugins" "${NEO4J_HOME}/certificates" \
+    && ln -s /data    "${NEO4J_HOME}/data" \
+    && ln -s /logs    "${NEO4J_HOME}/logs" \
     && ln -s /plugins "${NEO4J_HOME}/plugins" \
-    && mkdir /metrics && ln -s /metrics "${NEO4J_HOME}/metrics"
+    && ln -s /certs   "${NEO4J_HOME}/certificates" \
+    && ln -s /metrics "${NEO4J_HOME}/metrics"
 
 ## Build our exeve wrapper
 FROM golang:1.15-buster AS go-builder
@@ -38,11 +41,9 @@ COPY --from=neo4j-ce-downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
 COPY --from=neo4j-ce-downloader --chown=${NONROOT} /data /data
 COPY --from=neo4j-ce-downloader --chown=${NONROOT} /logs /logs
 COPY --from=neo4j-ce-downloader --chown=${NONROOT} /metrics /metrics
+COPY --from=neo4j-ce-downloader --chown=${NONROOT} /certs /certs
 COPY --from=neo4j-ce-downloader /plugins /plugins
 COPY --from=go-builder /go/src/app/gojava /bin/gojava
-
-# /tmp is required at the moment to support --read-only thanks to JNA stuff
-VOLUME ["/data", "/logs", "/plugins", "/tmp"]
 
 ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
 # Check Neo4j can run
@@ -75,7 +76,7 @@ ENTRYPOINT ["java", \
 
 
 # /tmp is required at the moment to support --read-only thanks to JNA stuff
-VOLUME ["/data", "/logs", "/plugins", "/tmp"]
+VOLUME ["/data", "/logs", "/plugins", "/tmp", "/certs"]
 
 ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
 

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.ContainerSslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.configuration.AssetUri;
@@ -23,7 +23,7 @@ public class SslPolicyLoaderTest {
         Files.createDirectory(tempDir.resolve("trusted"));
         Files.createDirectory(tempDir.resolve("revoked"));
 
-        SslPolicyConfig policy = SslPolicyConfig.forScope(SslPolicyScope.TESTING);
+        ContainerSslPolicyConfig policy = ContainerSslPolicyConfig.forScope(SslPolicyScope.TESTING);
         URI keyUri = this.getClass().getResource("/key.pem").toURI();
         URI certUri = this.getClass().getResource("/cert.pem").toURI();
 

@@ -24,7 +24,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.ContainerSslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -65,7 +65,7 @@ import static java.lang.String.format;
  */
 public class SslPolicyLoader {
     static {
-        System.out.println("XXX: container-friendly SslPolicyLoader loaded!");
+        System.out.println("XXX: Container-friendly SslPolicyLoader loaded!");
     }
 
     private final Map<SslPolicyScope, SslPolicy> policies = new ConcurrentHashMap<>();
@@ -111,7 +111,7 @@ public class SslPolicyLoader {
 
         if (sslPolicy == null) {
             throw new IllegalArgumentException(
-                    format("Cannot find enabled SSL policy with name '%s' in the configuration", scope));
+                    format("Cannot find enabled Container-friendly SSL policy with name '%s' in the configuration", scope));
         }
         return sslPolicy;
     }
@@ -121,12 +121,12 @@ public class SslPolicyLoader {
     }
 
     private void load() {
-        config.getGroups(SslPolicyConfig.class).values().forEach(this::addPolicy);
+        config.getGroups(ContainerSslPolicyConfig.class).values().forEach(this::addPolicy);
 
-        policies.forEach((scope, sslPolicy) -> log.info(format("Loaded SSL policy '%s' = %s", scope.name(), sslPolicy)));
+        policies.forEach((scope, sslPolicy) -> log.info(format("Loaded Container-friendly SSL policy '%s' = %s", scope.name(), sslPolicy)));
     }
 
-    private void addPolicy(SslPolicyConfig policyConfig) {
+    private void addPolicy(ContainerSslPolicyConfig policyConfig) {
         if (config.get(policyConfig.enabled)) {
             SslPolicyScope scope = policyConfig.getScope();
             SslPolicy policy = createSslPolicy(policyConfig);
@@ -136,7 +136,7 @@ public class SslPolicyLoader {
         }
     }
 
-    private SslPolicy createSslPolicy(SslPolicyConfig policyConfig) {
+    private SslPolicy createSslPolicy(ContainerSslPolicyConfig policyConfig) {
         File baseDirectory = config.get(policyConfig.base_directory).toFile();
         File revokedCertificatesDir = config.get(policyConfig.revoked_dir).toFile();
 
@@ -172,7 +172,7 @@ public class SslPolicyLoader {
                 logProvider);
     }
 
-    private KeyAndChain pemKeyAndChain(SslPolicyConfig policyConfig) {
+    private KeyAndChain pemKeyAndChain(ContainerSslPolicyConfig policyConfig) {
         AssetUri privateKeyFile = config.get(policyConfig.private_key);
         SecureString privateKeyPassword = config.get(policyConfig.private_key_password);
         File trustedCertificatesDir = config.get(policyConfig.trusted_dir).toFile();

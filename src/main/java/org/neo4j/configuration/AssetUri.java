@@ -24,7 +24,7 @@ public class AssetUri implements Comparable<AssetUri> {
             return;
 
         for (AssetProvider provider : Services.loadAll(AssetProvider.class)) {
-            registerProvider(provider.getProviderScheme(), provider.getClass().getConstructor().newInstance());
+            registerProvider(provider.getProviderScheme(), provider);
             System.out.println("xxx: registered AssetProvider: " + provider.getClass().getCanonicalName());
         }
         loaded = true;
@@ -80,5 +80,10 @@ public class AssetUri implements Comparable<AssetUri> {
     @Override
     public int compareTo(AssetUri o) {
         return uri.compareTo(o.getUri());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("{%s, %s}", provider.getClass().getCanonicalName(), uri.toASCIIString());
     }
 }

@@ -17,10 +17,8 @@ import static org.neo4j.configuration.SettingValueParsers.*;
 
 @ServiceProvider
 @PublicApi
-public class SslPolicyConfig extends GroupSetting {
-    static {
-        System.out.println("XXX: container-friendly SslPolicyConfig loaded!");
-    }
+public class ContainerSslPolicyConfig extends GroupSetting {
+
     @Description("Private PKCS#8 key in PEM format.")
     public final Setting<AssetUri> private_key;
 
@@ -63,11 +61,11 @@ public class SslPolicyConfig extends GroupSetting {
 
     private SslPolicyScope scope;
 
-    public static SslPolicyConfig forScope(SslPolicyScope scope) {
-        return new SslPolicyConfig(scope.name());
+    public static ContainerSslPolicyConfig forScope(SslPolicyScope scope) {
+        return new ContainerSslPolicyConfig(scope.name());
     }
 
-    private SslPolicyConfig(String scopeString) {
+    private ContainerSslPolicyConfig(String scopeString) {
         super(scopeString.toLowerCase());
         scope = SslPolicyScope.fromName(scopeString);
         if (scope == null) {
@@ -83,14 +81,14 @@ public class SslPolicyConfig extends GroupSetting {
         trusted_dir = getBuilder("trusted_dir", PATH, Path.of("trusted")).setDependency(base_directory).build();
     }
 
-    public SslPolicyConfig() //For serviceloading
+    public ContainerSslPolicyConfig() //For serviceloading
     {
         this("testing");
     }
 
     @Override
     public String getPrefix() {
-        return "dbms.ssl.policy";
+        return "dbms.container.ssl.policy";
     }
 
     public SslPolicyScope getScope() {

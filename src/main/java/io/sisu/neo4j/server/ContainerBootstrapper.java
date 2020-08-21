@@ -62,9 +62,10 @@ public abstract class ContainerBootstrapper implements Bootstrapper {
         System.getenv().forEach((key, val) -> {
             if (key.startsWith("NEO4J_")
                     && !key.equalsIgnoreCase("neo4j_home")
-                    && !key.equalsIgnoreCase("neo4j_conf")) {
+                    && !key.equalsIgnoreCase("neo4j_conf")
+                    && !key.equalsIgnoreCase("NEO4J_ACCEPT_LICENSE_AGREEMENT")) {
                 String property = convertEnvToProp(key);
-                System.out.println(String.format("Adding config override from environment %s=%s", property, val));
+                System.out.printf("Adding config override from environment %s=%s%n", property, val);
                 config.put(property, val);
             }
         });
@@ -94,9 +95,9 @@ public abstract class ContainerBootstrapper implements Bootstrapper {
 
             serverAddress = HttpConnector.listen_address.toString();
 
-            log.info("CONTAINER FRIENDLY NEO4J IS Starting...");
+            log.info("*** CONTAINER FRIENDLY NEO4J IS Starting...");
             databaseManagementService = createNeo(config, dependencies);
-            log.info("CONTAINER FRIENDLY NEO4J IS Started.");
+            log.info("*** CONTAINER FRIENDLY NEO4J IS Started.");
 
             return OK;
         } catch (ServerStartupException e) {
