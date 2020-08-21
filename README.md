@@ -90,19 +90,79 @@ services gives downline users more choice and flexibility.
 
 ### Experiment 2.1: Support defining files (certs, keys, etc.) as URIs
 Simple as that...instead of a local filesystem path, parse a uri like
-`file:///neo4j/certificates/private.key` or more interestingly
-`gs:///my_bucket/some_file.txt`.
+`file:/neo4j/certificates/private.key` or more interestingly
+`gs://my_bucket/some_file.txt`.
 
-Why uri's? We can map the scheme to the backing client for retrieving
-the object.
+>Why uri's? We can map the scheme to the backing client for retrieving
+>the object.
 
-> This part is currently _a work in progress_...see the `CloudUri` class
-> I'm toying with.
+The first step is extending the Neo4j Config framework. For now, I've
+chosen to add a new `ContainerSslPolicyConfig` class (similar to the
+built-in `SslPolicyConfig`) that uses a slightly different namespace
+and maps some of the property keys, specifically `private_key` and
+`public_certificate`, to settings backed by this `AssetUri` concept.
+
+For instance, you can now configure a primary key file that's stored
+in Google Cloud Storage (goal is to add support for an official
+Secrets storage like Google Secrets Manager):
+
+```
+dbms.container.ssl.policy.bolt.enabled=true
+dbms.container.ssl.policy.bolt.private_key=gs://bucket/key.pem
+dbms.container.ssl.policy.bolt.public_certificate=gs://bucket/cert.pem
+```
+
+Ignoring how this config is leveraged for the moment (see the next
+section), the idea is we provide a URI that can be turned into an
+`AssetUri`. Given the scheme (e.g. `gs`), we can hypothetically reach
+for a Google Storage client to retrieve the data.
+
+Since supporting all sorts of remote or cloud-native services is
+infeasible, if we lean on the Java _Service Provider Interface_
+framework (like we use elsewhere in the product), we can define a
+simple interface that can be extended elsewhere and registered at
+runtime. For example, this interface currently looks like:
+
+```java
+package io.sisu.neo4j.cloud;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.channels.ReadableByteChannel;
+
+public interface AssetProvider {
+    public String getProviderName();
+
+    public String getProviderScheme();
+
+    public ReadableByteChannel open(URI uri) throws IOException;
+}
+```
+
+Logically, we could:
+1. parse the provided URI using Java's native URI class
+2. pull out the scheme
+3. check for a "registered" provider/client for said scheme
+4. when the data is needed, call `open(<uri>)` on the provider
+5. consume the byte channel as needed
+
+> Why a `ReadableByteChannel`? It's designed to be non-restartable and
+> focused on bytes. Pretty generic and should be mappable to almost
+> cloud services and we punt on the decoding issue (for text content)
+> to whichever system is consuming the data.
+
+Right now the following prototypes are implemented:
+
+- `LocalFSProvider` (**file**) -- file:/path/to/some/file
+- `HttpProvider` (**http**) -- http://localhost:1234/junk.txt
+- `GCSProvider` (**gs**) -- gs://bucketname/object.thing
+
+They are quick and dirty.
 
 ### Experiment 2.2: Hot-wire in a better SslPolicyLoader
 There's so much nastiness going on in the bootstrapping code that it's
 looking to be far far easier to just preload a custom/hacked
-SslPolicyLoader class. I'm going to do that to save on copy-pasta.
+`SslPolicyLoader` class. I'm going to do that to save on copy-pasta.
 
 For now, I'm implemented this by:
 
@@ -110,7 +170,7 @@ For now, I'm implemented this by:
 2. Creating a `${NEO4J_HOME}/lib-override` directory in the image
 3. Adding `${NEO4J_HOME}/lib-override` before `/lib` in the classpath
 
-Sometimes Java is fun.
+Sometimes Java is fun. _Sometimes._
 
 ## Problem 3: Further hardening of Neo4j is HARD
 Because of Problem 1 and 2, hardening Neo4j is much more difficult
