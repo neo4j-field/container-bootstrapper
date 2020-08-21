@@ -5,8 +5,8 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GroupSetting;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.org.neo4j.configuration.AssetUri;
-import org.neo4j.org.neo4j.configuration.ContainerSettingValueParsers;
+import org.neo4j.configuration.AssetUri;
+import org.neo4j.configuration.ContainerSettingValueParsers;
 import org.neo4j.string.SecureString;
 
 import java.nio.file.Path;
@@ -18,6 +18,9 @@ import static org.neo4j.configuration.SettingValueParsers.*;
 @ServiceProvider
 @PublicApi
 public class SslPolicyConfig extends GroupSetting {
+    static {
+        System.out.println("XXX: container-friendly SslPolicyConfig loaded!");
+    }
     @Description("Private PKCS#8 key in PEM format.")
     public final Setting<AssetUri> private_key;
 
@@ -71,8 +74,8 @@ public class SslPolicyConfig extends GroupSetting {
             throw new IllegalArgumentException("SslPolicy can not be created for scope: " + scopeString);
         }
 
-        private_key = getBuilder("remote_private_key", ContainerSettingValueParsers.ASSET_URI, null).build();
-        public_certificate = getBuilder("remote_public_certificate", ContainerSettingValueParsers.ASSET_URI, null).build();
+        private_key = getBuilder("private_key", ContainerSettingValueParsers.ASSET_URI, null).build();
+        public_certificate = getBuilder("public_certificate", ContainerSettingValueParsers.ASSET_URI, null).build();
 
         client_auth = getBuilder("client_auth", ofEnum(ClientAuth.class), scope.authDefault).build();
         base_directory = getBuilder("base_directory", PATH, Path.of(scope.baseDir)).setDependency(neo4j_home).immutable().build();

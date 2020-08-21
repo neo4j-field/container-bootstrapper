@@ -108,4 +108,5 @@ ENTRYPOINT ["gojava"]
 
 CMD ["io.sisu.neo4j.server.CommunityContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
-COPY ./build/libs/container-bootstrapper.jar "${NEO4J_HOME}/lib-override/"
+COPY ./build/container-bootstrapper/lib/* "${NEO4J_HOME}/lib-override/"
+COPY ./build/container-bootstrapper/container-bootstrapper.jar "${NEO4J_HOME}/lib-override/"

@@ -1,0 +1,2 @@
+io.sisu.neo4j.cloud.LocalFSProvider
+io.sisu.neo4j.cloud.GCSProvider

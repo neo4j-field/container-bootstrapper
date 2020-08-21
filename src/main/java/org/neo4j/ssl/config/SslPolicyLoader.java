@@ -28,7 +28,7 @@ import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.org.neo4j.configuration.AssetUri;
+import org.neo4j.configuration.AssetUri;
 import org.neo4j.ssl.ContainerPkiUtils;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;

@@ -1,7 +1,6 @@
-package org.neo4j.org.neo4j.configuration;
+package org.neo4j.configuration;
 
-import io.sisu.neo4j.io.sisu.neo4j.cloud.UnsupportedProviderException;
-import org.neo4j.configuration.SettingValueParser;
+import io.sisu.neo4j.cloud.UnsupportedProviderException;
 
 import java.net.URISyntaxException;
 

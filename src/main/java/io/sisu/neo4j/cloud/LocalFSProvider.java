@@ -1,6 +1,4 @@
-package io.sisu.neo4j.io.sisu.neo4j.cloud;
-
-import org.neo4j.org.neo4j.configuration.AssetUri;
+package io.sisu.neo4j.cloud;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,20 +7,19 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 
 /**
- * Simple abstraction for local filesystem acccess, primarily testing.
+ * Simple abstraction for local filesystem access, primarily testing.
  */
 public class LocalFSProvider implements AssetProvider {
 
     public static final String NAME = "file";
 
-    static {
-        if (!AssetUri.registerProvider(NAME, new LocalFSProvider())) {
-            System.err.println("Failed to register LocalFSProvider");
-        }
+    @Override
+    public String getProviderName() {
+        return NAME;
     }
 
     @Override
-    public String getProviderName() {
+    public String getProviderScheme() {
         return NAME;
     }
 

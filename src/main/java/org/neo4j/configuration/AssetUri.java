@@ -1,13 +1,13 @@
-package org.neo4j.org.neo4j.configuration;
+package org.neo4j.configuration;
 
-import io.sisu.neo4j.io.sisu.neo4j.cloud.UnsupportedProviderException;
-import io.sisu.neo4j.io.sisu.neo4j.cloud.AssetProvider;
+import io.sisu.neo4j.cloud.UnsupportedProviderException;
+import io.sisu.neo4j.cloud.AssetProvider;
+import org.neo4j.service.Services;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,7 +17,28 @@ public class AssetUri implements Comparable<AssetUri> {
 
     private static final Map<String, AssetProvider> registeredProviders = new ConcurrentHashMap<>();
 
+    private static boolean loaded = false;
+
+    public synchronized static void findAndRegister() throws Exception {
+        if (loaded)
+            return;
+
+        for (AssetProvider provider : Services.loadAll(AssetProvider.class)) {
+            registerProvider(provider.getProviderScheme(), provider.getClass().getConstructor().newInstance());
+            System.out.println("xxx: registered AssetProvider: " + provider.getClass().getCanonicalName());
+        }
+        loaded = true;
+    }
+
     protected AssetUri(URI uri) throws UnsupportedProviderException {
+        if (!loaded) {
+            try {
+                findAndRegister();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         AssetProvider provider = registeredProviders.get(uri.getScheme());
         if (provider == null) {
             throw new UnsupportedProviderException("no provider registered for " + uri.getScheme());

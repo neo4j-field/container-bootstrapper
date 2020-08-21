@@ -1,8 +1,6 @@
 package org.neo4j.ssl.config;
 
-import io.sisu.neo4j.io.sisu.neo4j.cloud.LocalFSProvider;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.neo4j.configuration.Config;
@@ -10,7 +8,7 @@ import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.org.neo4j.configuration.AssetUri;
+import org.neo4j.configuration.AssetUri;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -19,11 +17,6 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
 public class SslPolicyLoaderTest {
-
-    @BeforeAll
-    public static void setup() {
-        AssetUri.registerProvider(LocalFSProvider.NAME, new LocalFSProvider());
-    }
 
     @Test
     public void canLoadPrivateKeyFromLocalFSProvider(@TempDir Path tempDir) throws Exception {
