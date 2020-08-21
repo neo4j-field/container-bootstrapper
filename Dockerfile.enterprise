@@ -7,19 +7,21 @@ ARG NEO4J_TARBALL=neo4j-enterprise-4.1.1-unix.tar.gz
 ARG NEO4J_DOWNLOAD_URI=https://dist.neo4j.org
 ARG NEO4J_HOME="/neo4j"
 
-RUN mkdir /data /logs /plugins
+RUN mkdir /data /logs /plugins /certs /metrics
 RUN wget -q -P /tmp "${NEO4J_DOWNLOAD_URI}/${NEO4J_TARBALL}" \
     && echo "${NEO4J_SHA256}  /tmp/${NEO4J_TARBALL}" | sha256sum -csw \
     && tar x -z -f "/tmp/${NEO4J_TARBALL}" -C /tmp \
     && rm "/tmp/${NEO4J_TARBALL}" \
     && mv /tmp/neo4j-* "${NEO4J_HOME}" \
-    && mkdir "${NEO4J_HOME}/lib-override" \
-    && rm -r "${NEO4J_HOME}/data" "${NEO4J_HOME}/logs" "${NEO4J_HOME}/plugins" \
-    && ln -s /data "${NEO4J_HOME}/data" \
-    && ln -s /logs "${NEO4J_HOME}/logs" \
+    && chown -R root:root "${NEO4J_HOME}"
+
+RUN mkdir "${NEO4J_HOME}/lib-override" \
+    && rm -r "${NEO4J_HOME}/data" "${NEO4J_HOME}/logs" "${NEO4J_HOME}/plugins" "${NEO4J_HOME}/certificates" \
+    && ln -s /data    "${NEO4J_HOME}/data" \
+    && ln -s /logs    "${NEO4J_HOME}/logs" \
     && ln -s /plugins "${NEO4J_HOME}/plugins" \
-    && ln -s /import "${NEO4J_HOME}/import" \
-    && mkdir /metrics && ln -s /metrics "${NEO4J_HOME}/metrics"
+    && ln -s /certs   "${NEO4J_HOME}/certificates" \
+    && ln -s /metrics "${NEO4J_HOME}/metrics"
 
 ## Build our execve wrapper
 FROM golang:1.15-buster AS go-builder
@@ -39,11 +41,42 @@ COPY --from=neo4j-ee-downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
 COPY --from=neo4j-ee-downloader --chown=${NONROOT} /data /data
 COPY --from=neo4j-ee-downloader --chown=${NONROOT} /logs /logs
 COPY --from=neo4j-ee-downloader --chown=${NONROOT} /metrics /metrics
+COPY --from=neo4j-ee-downloader --chown=${NONROOT} /certs /certs
 COPY --from=neo4j-ee-downloader /plugins /plugins
 COPY --from=go-builder /go/src/app/gojava /bin/gojava
 
+ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
+# Check Neo4j can run
+RUN ["java", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
+
+EXPOSE 7474 7473 7687
+USER nonroot
+
+# Default config
+ENV NEO4J_dbms_default__listen__address=0.0.0.0
+
+# All the esoteric settings from the original neo4j shell can go here
+ENTRYPOINT ["java", \
+    "-Dfile.encoding=UTF-8", \
+    "-XX:+UseG1GC", \
+    "-XX:-OmitStackTraceInFastThrow", \
+    "-XX:+AlwaysPreTouch", \
+    "-XX:+UnlockExperimentalVMOptions", \
+    "-XX:+TrustFinalNonStaticFields", \
+    "-XX:+DisableExplicitGC", \
+    "-XX:MaxInlineLevel=15", \
+    "-Djdk.nio.maxCachedBufferSize=262144", \
+    "-Dio.netty.tryReflectionSetAccessible=true", \
+    "-XX:+ExitOnOutOfMemoryError", \
+    "-Djdk.tls.ephermeralDHKeySize=2048", \
+    "-Djdk.tls.rejectClientInitiatedRenogotiation=true", \
+    "-XX:FlightRecorderOptions=stackdepth=256", \
+    "-XX:+UnlockDiagnosticVMOptions", \
+    "-XX:+DebugNonSafepoints"]
+
+
 # /tmp is required at the moment to support --read-only thanks to JNA stuff
-VOLUME ["/data", "/logs", "/plugins", "/tmp"]
+VOLUME ["/data", "/logs", "/plugins", "/tmp", "/certs"]
 
 ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
 
@@ -66,13 +99,14 @@ ENV JAVA_TOOL_OPTIONS -Dfile.encoding=UTF-8 \
     -XX:+DebugNonSafepoints
 
 # Check if Neo4j can run
-RUN ["gojava", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
+RUN ["gojava", "--dry-run", "com.neo4j.server.enterprise.EnterpriseEntryPoint"]
 
 # Actual app-specific details
 EXPOSE 7474 7473 7687
 USER nonroot
 ENV NEO4J_dbms_default__listen__address=0.0.0.0
 ENTRYPOINT ["gojava"]
+
 CMD ["io.sisu.neo4j.server.EnterpriseContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
 COPY ./build/container-bootstrapper/lib/* "${NEO4J_HOME}/lib-override/"
