@@ -1,7 +1,6 @@
 package io.sisu.neo4j.cloud;
 
 import com.google.cloud.storage.contrib.nio.CloudStorageFileSystem;
-import org.neo4j.configuration.AssetUri;
 
 import java.io.IOException;
 import java.net.URI;
