@@ -1,6 +1,7 @@
-package io.sisu.neo4j.cloud;
+package io.sisu.neo4j.cloud.gcp;
 
 import com.google.cloud.storage.contrib.nio.CloudStorageFileSystem;
+import io.sisu.neo4j.cloud.AssetProvider;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,7 +10,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class GCSProvider implements AssetProvider {
+public class CloudStorageProvider implements AssetProvider {
     public static final String NAME = "gcs";
     public static final String SCHEME = "gs";
 

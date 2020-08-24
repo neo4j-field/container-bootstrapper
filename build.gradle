@@ -38,6 +38,7 @@ project(':gcp') {
     dependencies {
         implementation project(':bootstrapper')
         implementation 'com.google.cloud:google-cloud-nio:0.121.2'
+        implementation 'com.google.cloud:google-cloud-secretmanager:1.1.1'
         testImplementation 'org.neo4j:neo4j:4.1.1'
     }
 }

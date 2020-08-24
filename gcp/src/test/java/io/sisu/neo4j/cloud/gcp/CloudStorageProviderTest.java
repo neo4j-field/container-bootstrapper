@@ -1,4 +1,4 @@
-package io.sisu.neo4j.cloud;
+package io.sisu.neo4j.cloud.gcp;
 
 import com.google.cloud.storage.contrib.nio.CloudStorageFileSystem;
 import com.google.cloud.storage.contrib.nio.CloudStorageFileSystemProvider;
@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class GCSProviderTest {
+public class CloudStorageProviderTest {
 
     private static final String BUCKET = "testBucket";
     private static final String OBJECT = "testObject";

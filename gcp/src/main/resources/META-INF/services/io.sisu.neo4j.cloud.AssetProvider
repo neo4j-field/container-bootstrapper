@@ -1,1 +1,2 @@
-io.sisu.neo4j.cloud.GCSProvider
+io.sisu.neo4j.cloud.gcp.CloudStorageProvider
+io.sisu.neo4j.cloud.gcp.SecretManagerProvider
