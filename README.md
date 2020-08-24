@@ -4,10 +4,13 @@ Neo4j kinda sucks in a cloud-centric world and the first step is
 making it suck-less in a Linux container world.
 
 **TL;DR:**
-1. Get Docker in a Linux-like environment
-2. Run `make test` to launch a Neo4j 4.1 Community Edition in Docker
+1. Get Docker installed in a Linux-like environment
+2. Make sure you have JDK 11 installed somewhere Gradle can find it
+3. Run `make test` to launch a Neo4j 4.1 Community Edition in Docker
+   or `make test-ee` to launch Neo4j 4.1 Enterprise Edition
 
-> Want to use Enterprise Edition? `make test-ee`.
+> Want to use Enterprise Edition? Agree to the license by setting
+> `NEO4J_ACCEPT_LICENSE_AGREEMENT=yes` in your environment.
 
 ## Problem 1: The official Docker images are bloated
 Having all sorts of pomp and circumstance in shell scripts calling
