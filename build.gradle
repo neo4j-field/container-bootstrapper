@@ -1,24 +1,30 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '6.0.0'
+}
+
+apply plugin: 'base'
+version = '0.1.0-SNAPSHOT'
+
+// Common global logic for all subprojects
 subprojects {
     apply plugin: 'java'
     group = 'io.sisu.neo4j'
-    version = '0.1.0-SNAPSHOT'
+    version = parent.version
     repositories {
         jcenter()
     }
     test {
         useJUnitPlatform()
     }
-
     dependencies {
-        // Use JUnit Jupiter API for testing.
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
-
-        // Use JUnit Jupiter Engine for testing.
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
     }
 }
 
+// Core project that overrides some Neo4j classes and adds in container-friendly
+// entrypoints and logic. Includes the SPI class 'AssetProvider'
 project(':bootstrapper') {
     dependencies {
         compileOnly 'org.neo4j:neo4j:4.1.1'
@@ -26,7 +32,9 @@ project(':bootstrapper') {
     }
 }
 
+// Implements Google Cloud AssetProviders for things like Google Cloud Storage
 project(':gcp') {
+    apply plugin: 'com.github.johnrengelman.shadow'
     dependencies {
         implementation project(':bootstrapper')
         implementation 'com.google.cloud:google-cloud-nio:0.121.2'
@@ -34,10 +42,19 @@ project(':gcp') {
     }
 }
 
-task unpack(type: Copy, dependsOn: 'distZip' ) {
-    def zipFile = file("${buildDir}/distributions/container-bootstrapper.zip")
-    def outputDir = file("${buildDir}/")
+// Make a simple task for building all subprojects and collecting their output, along with
+// an update to the global 'clean' to remove that new directory
+task dist(type: Copy, dependsOn: [project(':bootstrapper').jar, project(':gcp').shadowJar]) {
+    from project(':bootstrapper').jar.outputs
+    from project(':gcp').shadowJar.outputs
+    into file('dist/')
+}
 
-    from zipTree(zipFile)
-    into outputDir
+clean {
+    delete 'dist/'
+}
+
+// Helper task to make it easier for the GNU Makefile to pick up the version we're building
+task printVersion {
+    println version
 }

@@ -1,14 +1,15 @@
 SHELL = /bin/sh
 DIR := $(shell pwd)
-
+VERSION = $(shell ./gradlew -q printVersion)
 .PHONY: build test test-ee jars
 
 build: jars
-	@docker build -t neo4j-docker:latest -t neo4j-docker:4.1 -f Dockerfile .
-	@docker build -t neo4j-docker:enterprise -t neo4j-docker:4.1-enterprise -f Dockerfile.enterprise .
+	@docker build --build-arg=VERSION=${VERSION} -t neo4j-docker:latest -t neo4j-docker:4.1 -f Dockerfile .
+	@docker build --build-arg=VERSION=${VERSION} -t neo4j-docker:enterprise -t neo4j-docker:4.1-enterprise -f Dockerfile.enterprise .
 
 jars:
-	@./gradlew unpack
+	@echo Building subprojects with version=${VERSION}
+	@./gradlew dist
 
 test: build
 	@exec docker run --rm -it --read-only \

@@ -25,15 +25,19 @@ RUN mkdir "${NEO4J_HOME}/lib-override" \
 
 ## Build our execve wrapper
 FROM golang:1.15-buster AS go-builder
+ARG MODNAME="github.com/neo4j-field/container-bootstrapper"
 WORKDIR /go/src/app
 ENV GOOS=linux \
     LDFLAGS="-s -w"
-COPY gojava.go .
-RUN go build -ldflags="${LDFLAGS}" gojava.go
+RUN mkdir cmd
+COPY go.mod .
+COPY cmd/ cmd/
+RUN go build -ldflags="${LDFLAGS}" "${MODNAME}/cmd/gojava"
 
 ####################################################################################
 ## Use Google's "distroless" OpenJDK image...less bloat, more awesome!
 FROM gcr.io/distroless/java-debian10:11
+ARG VERSION
 ARG NEO4J_HOME="/neo4j"
 ARG NONROOT=nonroot
 COPY --from=neo4j-ee-downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
@@ -109,5 +113,4 @@ ENTRYPOINT ["gojava"]
 
 CMD ["io.sisu.neo4j.server.EnterpriseContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
-COPY ./build/container-bootstrapper/lib/* "${NEO4J_HOME}/lib-override/"
-COPY ./build/container-bootstrapper/container-bootstrapper.jar "${NEO4J_HOME}/lib-override/"
+COPY ./dist/* "${NEO4J_HOME}/lib-override/"
