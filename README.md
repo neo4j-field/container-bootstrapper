@@ -159,11 +159,14 @@ Logically, we could:
 
 Right now the following prototypes are implemented:
 
-- `LocalFSProvider` (**file**) -- file:/path/to/some/file
-- `HttpProvider` (**http**) -- http://localhost:1234/junk.txt
-- `GCSProvider` (**gs**) -- gs://bucketname/object.thing
+- For local use or testing
+  * `LocalFSProvider` (**file**) -- `file://path/to/some/file`
+  * `HttpProvider` (**http**) -- `http://localhost:1234/junk.txt`
+- For Google Cloud Platform
+  * `CloudStorageProvider` (**gs**) -- `gs://bucketname/object.thing`
+  * `SecretManagerProvider` (**gsm**) -- `gsm://projectId/secretId?version=versionNum`
 
-They are quick and dirty.
+They are quick and dirty at the moment, but sort of work.
 
 ### Experiment 2.2: Hot-wire in a better SslPolicyLoader
 There's so much nastiness going on in the bootstrapping code that it's
