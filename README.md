@@ -12,6 +12,9 @@ making it suck-less in a Linux container world.
 > Want to use Enterprise Edition? Agree to the license by setting
 > `NEO4J_ACCEPT_LICENSE_AGREEMENT=yes` in your environment.
 
+> Interested in using Kubernetes? Check my forked
+> [neo4j-helm](https://github.com/voutilad/neo4j-helm) project.
+
 ## Problem 1: The official Docker images are bloated
 Having all sorts of pomp and circumstance in shell scripts calling
 shell scripts calling Java makes for a very bad time:
@@ -188,6 +191,10 @@ limit, if it exists, and set it ourselves.
 
 See the code in the Go launcher (gojava) for how this is happening
 currently.
+
+> Known caveat: the memrec assumes it needs to leave a lot of space to
+> the OS, so it's overly conservative. Need to adjust that logic a bit
+> in order for it to be really useful.
 
 ## Problem 4: Further hardening of Neo4j is HARD
 Because of Problem 1 and 2, hardening Neo4j is much more difficult
