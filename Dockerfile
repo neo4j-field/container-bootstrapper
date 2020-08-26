@@ -41,6 +41,7 @@ ARG VERSION
 ARG NEO4J_HOME="/neo4j"
 ARG NONROOT=nonroot
 COPY --from=neo4j-ce-downloader "${NEO4J_HOME}" "${NEO4J_HOME}"
+
 # Since this container is shell-less, we use COPY with --chown to make directories
 COPY --from=neo4j-ce-downloader --chown=${NONROOT} /data /data
 COPY --from=neo4j-ce-downloader --chown=${NONROOT} /logs /logs
@@ -49,42 +50,15 @@ COPY --from=neo4j-ce-downloader --chown=${NONROOT} /certs /certs
 COPY --from=neo4j-ce-downloader /plugins /plugins
 COPY --from=go-builder /go/src/app/gojava /bin/gojava
 
-ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
-# Check Neo4j can run
-RUN ["java", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
-
-EXPOSE 7474 7473 7687
-USER nonroot
-
-# Default config
-ENV NEO4J_dbms_default__listen__address=0.0.0.0
-
-# All the esoteric settings from the original neo4j shell can go here
-ENTRYPOINT ["java", \
-    "-Dfile.encoding=UTF-8", \
-    "-XX:+UseG1GC", \
-    "-XX:-OmitStackTraceInFastThrow", \
-    "-XX:+AlwaysPreTouch", \
-    "-XX:+UnlockExperimentalVMOptions", \
-    "-XX:+TrustFinalNonStaticFields", \
-    "-XX:+DisableExplicitGC", \
-    "-XX:MaxInlineLevel=15", \
-    "-Djdk.nio.maxCachedBufferSize=262144", \
-    "-Dio.netty.tryReflectionSetAccessible=true", \
-    "-XX:+ExitOnOutOfMemoryError", \
-    "-Djdk.tls.ephermeralDHKeySize=2048", \
-    "-Djdk.tls.rejectClientInitiatedRenogotiation=true", \
-    "-XX:FlightRecorderOptions=stackdepth=256", \
-    "-XX:+UnlockDiagnosticVMOptions", \
-    "-XX:+DebugNonSafepoints"]
-
-
 # /tmp is required at the moment to support --read-only thanks to JNA stuff
 VOLUME ["/data", "/logs", "/plugins", "/tmp", "/certs"]
 
+USER nonroot
+
+# Set the jre classpath, but also set NEO4J_CONF as it's required by AdminTool
 ENV CLASSPATH="${NEO4J_HOME}/lib-override:${NEO4J_HOME}/lib-override/*:${NEO4J_HOME}/plugins:${NEO4J_HOME}/plugins/*:${NEO4J_HOME}/lib:${NEO4J_HOME}/lib/*"
 
-# Default JRE config
+# Pretune the JRE
 ENV JAVA_TOOL_OPTIONS -Dfile.encoding=UTF-8 \
     -XX:+UseG1GC \
     -XX:-OmitStackTraceInFastThrow \
@@ -102,15 +76,16 @@ ENV JAVA_TOOL_OPTIONS -Dfile.encoding=UTF-8 \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:+DebugNonSafepoints
 
-# Check if Neo4j can run
-RUN ["gojava", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
+# Check Neo4j can run with current classpath and jre settings
+RUN ["java", "--dry-run", "org.neo4j.server.CommunityEntryPoint"]
 
-# Actual app-specific details
-EXPOSE 7474 7473 7687
-USER nonroot
-ENV NEO4J_dbms_default__listen__address=0.0.0.0
+# Default community config
+ENV NEO4J_dbms_default__listen__address=0.0.0.0 \
+    NEO4J_HOME="${NEO4J_HOME}" \
+    NEO4J_CONF="${NEO4J_HOME}/conf" \
+    NEO4J_EDITION=community
+
 ENTRYPOINT ["gojava"]
-
 CMD ["io.sisu.neo4j.server.CommunityContainerEntryPoint", "--home-dir=/neo4j", "--config-dir=/neo4j/conf"]
 
 COPY ./dist/* "${NEO4J_HOME}/lib-override/"
