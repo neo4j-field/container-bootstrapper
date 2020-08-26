@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: neo4j-ee-standalone
+  name: neo4jcontainer-standalone-svc
   labels:
-    app: neo4j
+    app: neo4jcontainer-standalone-app
 spec:
   ports:
     - port: 17474
@@ -14,40 +14,49 @@ spec:
       name: bolt
   #clusterIP: None
   selector:
-    app: neo4j-ee-standalone
+    app: neo4jcontainer-standalone-app
   type: LoadBalancer
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4jcontainer-standalone-pv-claim
+  labels:
+    app: neo4jcontainer-standalone-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: neo4j-ee-standalone
+  name: neo4jcontainer-standalone-app
 spec:
-  serviceName: "neo4j-ee-standalone"
+  serviceName: "neo4jcontainer-standalone-svc"
   replicas: 1
   selector:
     matchLabels:
-      app: neo4j-ee-standalone
+      app: neo4jcontainer-standalone-app
   template:
     metadata:
       labels:
-        app: neo4j-ee-standalone
+        app: neo4jcontainer-standalone-app
     spec:
       terminationGracePeriodSeconds: 300
       securityContext:
         fsGroup: 65532
       containers:
-        - name: neo4j-ee-standalone
+        - name: neo4jcontainer-standalone-instance
           image: neo4j-docker:enterprise
           imagePullPolicy: Never
           env:
             - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
               value: "yes"
-            - name: NEO4J_dbms_pagecache_size
-              value: "768m"
-            - name: JVM_INITIAL_HEAP
-              value: "1280m"
-            - name: JVM_MAXIMUM_HEAP
-              value: "2048m"
             - name: NEO4J_dbms_connector_bolt_advertised__address
               value: ":17687"
           ports:
@@ -63,13 +72,13 @@ spec:
               name: tcp-bolt
           resources:
             requests:
-              memory: 2Gi
-              cpu: 2.0
+              memory: 512Mi
+#              cpu: 2.0
             limits:
-              memory: 3Gi
-              cpu: 4.0
+              memory: 1Gi
+#              cpu: 4.0
           volumeMounts:
-            - name: neo4j-ee-standalone-datadir
+            - name: neo4jcontainer-standalone-datadir
               mountPath: "/data"
           readinessProbe:
             initialDelaySeconds: 60
@@ -86,19 +95,6 @@ spec:
             tcpSocket:
               port: 7687
       volumes:
-        - name: neo4j-ee-standalone-datadir
+        - name: neo4jcontainer-standalone-datadir
           persistentVolumeClaim:
-            claimName: neo4j-ee-standalone-pv-claim
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: neo4j-ee-standalone-pv-claim
-  labels:
-    app: neo4j
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+            claimName: neo4jcontainer-standalone-pv-claim
