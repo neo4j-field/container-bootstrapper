@@ -175,7 +175,21 @@ For now, I'm implemented this by:
 
 Sometimes Java is fun. _Sometimes._
 
-## Problem 3: Further hardening of Neo4j is HARD
+## Problem 3: Neo4j is ignorant of memory cgroup settings
+The JVM now properly checks cgroups limits on Linux when setting
+default heap sizes, but the Neo4j memrec tool is still completely
+ignorant and will see the underlying host's physical memory when
+generating the estimate. This is sad.
+
+### Experiment 3.1: Check cgroup limit and pass it to memrec
+The memrec routine in `neo4j-admin memrec` can take a `--memory` flag
+allowing you to specify a memory limit to use. Let's detect the cgroup
+limit, if it exists, and set it ourselves.
+
+See the code in the Go launcher (gojava) for how this is happening
+currently.
+
+## Problem 4: Further hardening of Neo4j is HARD
 Because of Problem 1 and 2, hardening Neo4j is much more difficult
 than it could be. Linux containers support a tremendous amount of
 knobs for hardening based on namespaces and seccomp sandboxing these
@@ -184,7 +198,7 @@ days.
 But, when you're container is basically the equivalent of a VM, it's
 going to be tough to tighten things tup.
 
-### Experiment 3.1: STILL RESEARCHING
+### Experiment 4.1: STILL RESEARCHING
 
 For now, I'm testing with making the root image read-only via
 something like: `Docker run --read-only`. This currently seems to work
