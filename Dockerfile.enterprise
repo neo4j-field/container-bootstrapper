@@ -23,7 +23,7 @@ RUN mkdir "${NEO4J_HOME}/lib-override" \
     && ln -s /certs   "${NEO4J_HOME}/certificates" \
     && ln -s /metrics "${NEO4J_HOME}/metrics"
 
-## Build our execve wrapper
+## Build our execve-wrapper and magic bootstrapper
 FROM golang:1.15-buster AS go-builder
 ARG MODNAME="github.com/neo4j-field/container-bootstrapper"
 WORKDIR /go/src/app
